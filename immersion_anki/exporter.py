@@ -116,11 +116,10 @@ def export_apkg(deck: dict, cards: list[dict], output_dir: str | Path) -> Path:
             model=model,
             fields=fields,
             tags=[tag for tag in str(card.get("tags", "")).split() if tag],
-            guid=genanki.guid_for(deck["name"].strip().casefold(), card["stable_id"]),
+            guid=genanki.guid_for(deck["stable_id"], card["stable_id"]),
         )
         anki_deck.add_note(note)
 
     destination = output_dir / safe_filename(deck["name"])
     genanki.Package(anki_deck).write_to_file(str(destination))
     return destination
-

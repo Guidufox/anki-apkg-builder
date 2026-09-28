@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote_plus
+from urllib.parse import urlparse
 
 
 class PlaywrightBrowser:
@@ -50,7 +51,15 @@ class PlaywrightBrowser:
     def current_url(self) -> str:
         return self.page.url if self.page else ""
 
+    @staticmethod
+    def _validate_web_url(url: str, allow_blank: bool = False) -> None:
+        if allow_blank and url == "about:blank":
+            return
+        if urlparse(url).scheme not in {"http", "https"}:
+            raise ValueError("El browser agent solo puede abrir URLs http/https")
+
     def navigate(self, url: str, **_: object) -> dict:
+        self._validate_web_url(url)
         self.page.goto(url, wait_until="domcontentloaded", timeout=30_000)
         return self._page_state()
 
@@ -81,7 +90,22 @@ class PlaywrightBrowser:
         links = self.page.locator("a:visible").evaluate_all(
             "els => els.slice(0, 80).map(a => ({text: (a.innerText || a.getAttribute('aria-label') || '').trim(), href: a.href}))"
         )
-        return {**self._page_state(), "visible_text": text, "links": links}
+        controls = self.page.locator(
+            "a:visible, button:visible, input:visible, textarea:visible, select:visible, [role]:visible"
+        ).evaluate_all(
+            """els => els.slice(0, 120).map(el => ({
+              tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
+              accessible_name: el.getAttribute('aria-label') || el.innerText?.trim() || el.placeholder || '',
+              id: el.id || '', name: el.getAttribute('name') || '', type: el.getAttribute('type') || '',
+              href: el.href || ''
+            }))"""
+        )
+        return {
+            **self._page_state(),
+            "visible_text": text,
+            "links": links,
+            "accessible_controls": controls,
+        }
 
     def screenshot(self, **_: object) -> dict:
         directory = self.profile_path.parent / "screenshots"
@@ -95,6 +119,7 @@ class PlaywrightBrowser:
         return self._page_state()
 
     def new_tab(self, url: str = "about:blank", **_: object) -> dict:
+        self._validate_web_url(url, allow_blank=True)
         self.page = self.context.new_page()
         if url != "about:blank":
             self.page.goto(url, wait_until="domcontentloaded", timeout=30_000)

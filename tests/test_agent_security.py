@@ -4,6 +4,7 @@ import pytest
 
 from immersion_anki.browser.actions import ALLOWED_ACTIONS, BrowserActionError, BrowserTools
 from immersion_anki.browser.safety import sensitive_reason
+from immersion_anki.browser.playwright_client import PlaywrightBrowser
 
 
 class FakeBrowser:
@@ -24,6 +25,16 @@ def test_sensitive_action_requires_confirmation():
     assert sensitive_reason("type", {"selector": "input[type=password]", "text": "secret"})
     assert sensitive_reason("navigate", {"url": "https://jisho.org"}) is None
     assert sensitive_reason("read", {}) is None
+    assert sensitive_reason("navigate", {"url": "https://example.test/tool.exe"})
+    assert sensitive_reason(
+        "type", {"selector": "form textarea", "text": "hello", "press_enter": True}
+    )
+
+
+def test_browser_rejects_non_web_urls():
+    with pytest.raises(ValueError, match="http/https"):
+        PlaywrightBrowser._validate_web_url("file:///etc/passwd")
+    PlaywrightBrowser._validate_web_url("https://example.test")
 
 
 def test_browser_disabled_mode(client):
@@ -51,4 +62,3 @@ def test_disable_all_network(client):
     assert settings["network_enabled"] is False
     assert settings["web_access"] is False
     assert settings["browser_enabled"] is False
-
