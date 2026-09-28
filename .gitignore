@@ -10,4 +10,5 @@ exports/*
 !exports/.gitkeep
 .playwright/
 .local-chromium/
+.local-tools/
 downloads/
