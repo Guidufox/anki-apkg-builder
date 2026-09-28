@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Immersion Deck Builder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">間</span><span>Immersion Deck Builder</span></div>
+    <label class="deck-name-wrap">
+      <span>Deck</span>
+      <input id="deck-name" aria-label="Deck name" autocomplete="off">
+      <small id="save-status">Guardado</small>
+    </label>
+    <div class="top-actions">
+      <button class="button ghost" id="import-open">Import</button>
+      <button class="button ghost" id="backup-export">Backup JSON</button>
+      <label class="button ghost file-button">Restore JSON<input type="file" id="backup-file" accept="application/json,.json"></label>
+      <button class="button primary" id="export-apkg">Export .apkg</button>
+      <button class="icon-button" id="settings-open" aria-label="Settings" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel card-browser">
+      <div class="panel-header">
+        <div>
+          <h1>Cards</h1>
+          <span class="count" id="card-count">0 entries · 0 Anki cards</span>
+        </div>
+        <button class="icon-button accent" id="add-card" aria-label="Añadir tarjeta" title="Añadir tarjeta">＋</button>
+      </div>
+      <div class="filters">
+        <input id="search" type="search" placeholder="Search cards…" aria-label="Search cards">
+        <select id="tag-filter" aria-label="Filter by tag"><option value="">All tags</option></select>
+      </div>
+      <div id="card-list" class="card-list" aria-live="polite"></div>
+    </aside>
+
+    <section class="panel editor-panel">
+      <div class="panel-header editor-heading">
+        <div><span class="eyebrow">ENTRY EDITOR</span><h2 id="editor-title">Select a card</h2></div>
+        <div class="editor-actions">
+          <button class="icon-button" id="move-up" title="Move up">↑</button>
+          <button class="icon-button" id="move-down" title="Move down">↓</button>
+          <button class="button ghost small" id="duplicate-card">Duplicate</button>
+          <button class="button danger small" id="delete-card">Delete</button>
+        </div>
+      </div>
+      <form id="card-form" autocomplete="off">
+        <div class="field-row">
+          <label>Japanese expression<input name="japanese" lang="ja" placeholder="覆う"></label>
+          <label>Reading<input name="reading" lang="ja" placeholder="おおう"></label>
+        </div>
+        <label>Spanish meaning<input name="meaning" placeholder="cubrir"></label>
+        <label>Japanese example sentence<textarea name="example" lang="ja" rows="2" placeholder="霧が町を覆っている。"></textarea></label>
+        <label>Spanish example translation<textarea name="translation" rows="2" placeholder="La niebla cubre el pueblo."></textarea></label>
+        <label>Notes / context<textarea name="context" rows="2" placeholder="Silent Hill f"></textarea></label>
+        <label>Tags<input name="tags" placeholder="silent-hill-f verb vocabulary"><span class="hint">Separadas por espacios</span></label>
+        <div class="cloze-box">
+          <div class="cloze-title"><span>Recall card</span><span class="badge">Manual</span></div>
+          <label>Cloze sentence<textarea name="cloze" lang="ja" rows="2" placeholder="霧が町を＿＿＿＿いる。"></textarea></label>
+          <label>Cloze / answer<input name="cloze_answer" lang="ja" placeholder="覆って"></label>
+          <p>No se infieren conjugaciones. Escribe exactamente qué se oculta y cuál es la respuesta.</p>
+        </div>
+      </form>
+    </section>
+
+    <aside class="panel preview-panel">
+      <div class="panel-header preview-heading">
+        <div><span class="eyebrow">ANKI PREVIEW</span><h2>Card preview</h2></div>
+        <div class="segmented"><button class="active" data-preview="recognition">Recognition</button><button data-preview="recall">Recall</button></div>
+      </div>
+      <div class="preview-section"><span class="side-label">FRONT</span><div class="anki-card" id="preview-front"></div></div>
+      <div class="preview-section"><span class="side-label">BACK</span><div class="anki-card" id="preview-back"></div></div>
+
+      <section class="research-box">
+        <div class="research-title"><div><span class="eyebrow">LOCAL AGENT</span><h3>Research card</h3></div><span id="agent-dot" class="status-dot off"></span></div>
+        <textarea id="research-task" rows="2" placeholder="Opcional: qué quieres investigar"></textarea>
+        <button class="button secondary full" id="research-start">Research with Local AI</button>
+        <div id="agent-monitor" class="agent-monitor hidden">
+          <dl>
+            <dt>Status</dt><dd id="agent-status">idle</dd>
+            <dt>Current URL</dt><dd id="agent-url">—</dd>
+            <dt>Current task</dt><dd id="agent-task">—</dd>
+            <dt>Last action</dt><dd id="agent-last">—</dd>
+            <dt>Next proposed</dt><dd id="agent-next">—</dd>
+          </dl>
+          <div class="button-row">
+            <button class="button ghost small" id="agent-pause">Pause</button>
+            <button class="button ghost small" id="agent-resume">Continue</button>
+            <button class="button danger small" id="agent-stop">Stop</button>
+          </div>
+          <div id="agent-confirm" class="warning hidden">
+            <strong>Confirmation required</strong><p id="confirm-reason"></p>
+            <div class="button-row"><button class="button danger small" id="confirm-yes">Allow once</button><button class="button ghost small" id="confirm-no">Reject</button></div>
+          </div>
+        </div>
+        <div id="proposal" class="proposal hidden">
+          <h4>Research proposal</h4>
+          <label>Summary<textarea id="proposal-summary" rows="3"></textarea></label>
+          <label>Suggested meaning<input id="proposal-meaning"></label>
+          <label>Suggested example<textarea id="proposal-example" rows="2" lang="ja"></textarea></label>
+          <label>Notes<textarea id="proposal-notes" rows="3"></textarea></label>
+          <div id="proposal-sources" class="sources"></div>
+          <div class="button-row"><button class="button primary small" id="proposal-accept">Accept</button><button class="button ghost small" id="proposal-reject">Reject</button></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="import-dialog">
+    <form method="dialog" class="dialog-shell" onsubmit="return false">
+      <div class="dialog-header"><div><span class="eyebrow">BULK IMPORT</span><h2>Import TSV or CSV</h2></div><button class="icon-button close-dialog" value="cancel">×</button></div>
+      <p class="muted">7 columns: Japanese, Reading, Meaning, Example, Translation, Context, Tags.</p>
+      <div class="field-row narrow"><label>Format<select id="import-format"><option value="auto">Auto detect</option><option value="tsv">TSV</option><option value="csv">CSV</option></select></label><label>Load file<input id="import-file" type="file" accept=".tsv,.csv,text/csv,text/tab-separated-values"></label></div>
+      <textarea id="import-text" rows="10" placeholder="覆う&#9;おおう&#9;cubrir&#9;霧が町を覆っている。&#9;La niebla cubre el pueblo.&#9;Silent Hill f&#9;verb vocabulary"></textarea>
+      <div class="dialog-actions"><span id="import-message"></span><button class="button ghost" id="import-preview">Preview</button><button class="button primary" id="import-commit" disabled>Import rows</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Japanese</th><th>Reading</th><th>Meaning</th><th>Example</th><th>Translation</th><th>Context</th><th>Tags</th></tr></thead><tbody id="import-preview-body"></tbody></table></div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" class="dialog-shell settings-shell" onsubmit="return false">
+      <div class="dialog-header"><div><span class="eyebrow">SETTINGS</span><h2>Local AI & Privacy</h2></div><button class="icon-button close-dialog" value="cancel">×</button></div>
+      <div class="privacy-summary">
+        <div><span>AI provider</span><strong>LOCAL</strong></div>
+        <div><span>Web access</span><strong id="privacy-web">OFF</strong></div>
+        <div><span>Browser automation</span><strong id="privacy-browser">OFF</strong></div>
+        <div><span>Network requests</span><strong id="privacy-network">OFF</strong></div>
+      </div>
+      <div class="settings-grid">
+        <label class="toggle"><input type="checkbox" id="ai-enabled"><span>Enable Local AI</span></label>
+        <label>API format<select id="ai-format"><option value="openai">OpenAI-compatible</option><option value="ollama">Ollama</option></select></label>
+        <label class="wide">Base URL<input id="ai-url" placeholder="http://127.0.0.1:8080/v1"><span class="hint">Solo localhost/loopback; nunca se acepta una URL cloud.</span></label>
+        <label>Model name<input id="ai-model" placeholder="bonsai"></label>
+        <label>Context length<input id="ai-context" type="number" min="1024" step="1024"></label>
+        <label>Timeout (seconds)<input id="ai-timeout" type="number" min="1"></label>
+        <label class="toggle"><input type="checkbox" id="network-enabled"><span>Enable network access</span></label>
+        <label class="toggle"><input type="checkbox" id="web-enabled"><span>Enable web access</span></label>
+        <label class="toggle"><input type="checkbox" id="browser-enabled"><span>Enable browser automation</span></label>
+        <label class="toggle"><input type="checkbox" id="browser-headless"><span>Headless mode (off = visible)</span></label>
+        <label class="wide">Browser profile location<input id="browser-profile"><span class="hint warning-text">Usar otro perfil es una elección explícita. Puede exponer cookies/sesiones; se recomienda mantener data/browser-profile.</span></label>
+      </div>
+      <div class="dialog-actions spread"><button class="button danger" id="disable-network">DISABLE ALL NETWORK ACCESS</button><div><button class="button ghost" id="test-ai">Test Local AI</button> <button class="button primary" id="save-settings">Save settings</button></div></div>
+      <p id="settings-message" class="muted"></p>
+      <details><summary>Recent agent logs</summary><div id="agent-logs" class="log-list"></div></details>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>
