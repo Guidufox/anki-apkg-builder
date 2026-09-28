@@ -2,6 +2,8 @@
 
 Aplicación local —servida en el navegador— para crear tarjetas de japonés y exportar mazos `.apkg` compatibles con Anki.
 
+**Web del proyecto:** <https://guidufox.github.io/anki-apkg-builder/>
+
 - Funciona en **Windows y Linux**.
 - Los datos permanecen en tu computadora.
 - No requiere cuentas, OpenAI, ChatGPT, Codex ni una API cloud.
