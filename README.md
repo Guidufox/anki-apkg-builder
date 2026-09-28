@@ -4,6 +4,8 @@ Aplicación local —servida en el navegador— para crear tarjetas de japonés 
 
 **Web del proyecto:** <https://guidufox.github.io/anki-apkg-builder/>
 
+**Apoya el desarrollo:** <https://ko-fi.com/guidufox>
+
 - Funciona en **Windows y Linux**.
 - Los datos permanecen en tu computadora.
 - No requiere cuentas, OpenAI, ChatGPT, Codex ni una API cloud.
@@ -25,6 +27,12 @@ Aplicación local —servida en el navegador— para crear tarjetas de japonés 
 - Escape de HTML/JavaScript introducido en los campos.
 - Mazo demo incluido la primera vez.
 - Integración opcional con un modelo local y browser agent; no es necesaria para usar el programa.
+
+## Apoyar el proyecto
+
+Immersion Deck Builder es gratuito, local y open source. Si te resulta útil, puedes apoyar su mantenimiento, documentación y nuevas funciones en [Ko-fi](https://ko-fi.com/guidufox).
+
+El apoyo es completamente opcional y no bloquea ninguna función de la aplicación.
 
 ## Descargar
 
