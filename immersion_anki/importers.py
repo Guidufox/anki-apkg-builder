@@ -61,5 +61,6 @@ def parse_bulk(text: str, file_format: str = "auto") -> list[dict]:
                 "cloze_answer": "",
             }
         )
+        if not parsed[-1]["japanese"]:
+            raise ValueError(f"Fila {line_number}: Japanese no puede estar vacío")
     return parsed
-

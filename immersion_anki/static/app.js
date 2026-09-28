@@ -156,12 +156,13 @@ async function previewImport() {
   try {
     const data = await api("/api/import/preview", { method: "POST", body: { text: $("#import-text").value, format: $("#import-format").value } });
     const tbody = $("#import-preview-body"); tbody.replaceChildren();
-    data.rows.forEach(row => { const tr = document.createElement("tr"); ["japanese", "reading", "meaning", "example", "translation", "context", "tags"].forEach(key => { const td = document.createElement("td"); td.textContent = row[key]; tr.append(td); }); tbody.append(tr); });
-    state.importReady = data.rows.length > 0; $("#import-commit").disabled = !state.importReady; $("#import-message").textContent = `${data.rows.length} rows ready`;
+    data.rows.forEach(row => { const tr = document.createElement("tr"); tr.classList.toggle("duplicate-row", row._duplicate); const status = document.createElement("td"); status.className = row._duplicate ? "duplicate-status" : ""; status.textContent = row._duplicate ? row._duplicate_reason : "New"; tr.append(status); ["japanese", "reading", "meaning", "example", "translation", "context", "tags"].forEach(key => { const td = document.createElement("td"); td.textContent = row[key]; tr.append(td); }); tbody.append(tr); });
+    const duplicateCount = data.rows.filter(row => row._duplicate).length;
+    state.importReady = data.rows.length > 0; $("#import-commit").disabled = !state.importReady; $("#import-message").textContent = `${data.rows.length - duplicateCount} new · ${duplicateCount} duplicates`;
   } catch (error) { state.importReady = false; $("#import-commit").disabled = true; $("#import-message").textContent = error.message; }
 }
 
-async function commitImport() { try { const result = await api("/api/import/commit", { method: "POST", body: { text: $("#import-text").value, format: $("#import-format").value } }); $("#import-dialog").close(); await loadProject(result.cards[0]?.id); toast(`${result.cards.length} cards imported`); } catch (error) { toast(error.message, true); } }
+async function commitImport() { try { const result = await api("/api/import/commit", { method: "POST", body: { text: $("#import-text").value, format: $("#import-format").value, allow_duplicates: $("#allow-duplicates").checked } }); $("#import-dialog").close(); await loadProject(result.cards[0]?.id); toast(`${result.cards.length} imported · ${result.skipped.length} duplicates skipped`); } catch (error) { toast(error.message, true); } }
 
 async function loadSettings() {
   const s = await api("/api/settings");

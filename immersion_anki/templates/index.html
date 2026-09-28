@@ -117,8 +117,9 @@
       <p class="muted">7 columns: Japanese, Reading, Meaning, Example, Translation, Context, Tags.</p>
       <div class="field-row narrow"><label>Format<select id="import-format"><option value="auto">Auto detect</option><option value="tsv">TSV</option><option value="csv">CSV</option></select></label><label>Load file<input id="import-file" type="file" accept=".tsv,.csv,text/csv,text/tab-separated-values"></label></div>
       <textarea id="import-text" rows="10" placeholder="覆う&#9;おおう&#9;cubrir&#9;霧が町を覆っている。&#9;La niebla cubre el pueblo.&#9;Silent Hill f&#9;verb vocabulary"></textarea>
+      <label class="import-duplicate-option"><input id="allow-duplicates" type="checkbox"> Allow duplicate Japanese + Reading entries</label>
       <div class="dialog-actions"><span id="import-message"></span><button class="button ghost" id="import-preview">Preview</button><button class="button primary" id="import-commit" disabled>Import rows</button></div>
-      <div class="table-wrap"><table><thead><tr><th>Japanese</th><th>Reading</th><th>Meaning</th><th>Example</th><th>Translation</th><th>Context</th><th>Tags</th></tr></thead><tbody id="import-preview-body"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Status</th><th>Japanese</th><th>Reading</th><th>Meaning</th><th>Example</th><th>Translation</th><th>Context</th><th>Tags</th></tr></thead><tbody id="import-preview-body"></tbody></table></div>
     </form>
   </dialog>
 

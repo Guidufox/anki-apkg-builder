@@ -7,6 +7,7 @@ from flask import Blueprint, Response, current_app, jsonify, render_template, re
 from .exporter import export_apkg
 from .importers import parse_bulk
 from .ai import LocalAIError, LocalAIProvider
+from .db import card_identity
 
 
 bp = Blueprint("main", __name__)
@@ -87,7 +88,22 @@ def reorder_cards():
 def preview_import():
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify({"rows": parse_bulk(payload.get("text", ""), payload.get("format", "auto"))})
+        rows = parse_bulk(payload.get("text", ""), payload.get("format", "auto"))
+        existing = {card_identity(card) for card in db().list_cards()}
+        seen = set()
+        for row in rows:
+            identity = card_identity(row)
+            if identity in existing:
+                row["_duplicate"] = True
+                row["_duplicate_reason"] = "Already in deck"
+            elif identity in seen:
+                row["_duplicate"] = True
+                row["_duplicate_reason"] = "Repeated in import"
+            else:
+                row["_duplicate"] = False
+                row["_duplicate_reason"] = ""
+            seen.add(identity)
+        return jsonify({"rows": rows})
     except ValueError as exc:
         return error(str(exc))
 
@@ -99,7 +115,12 @@ def commit_import():
         rows = parse_bulk(payload.get("text", ""), payload.get("format", "auto"))
         if not rows:
             raise ValueError("No hay filas para importar")
-        return jsonify({"cards": db().import_cards(rows)}), 201
+        result = db().import_cards(
+            rows, skip_duplicates=not bool(payload.get("allow_duplicates", False))
+        )
+        if not result["cards"] and result["skipped"]:
+            return jsonify(result), 200
+        return jsonify(result), 201
     except ValueError as exc:
         return error(str(exc))
 

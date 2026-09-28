@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import unicodedata
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -97,6 +98,14 @@ DEFAULT_SETTINGS = {
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def card_identity(values: dict) -> tuple[str, str]:
+    def normalize(value: object) -> str:
+        text = unicodedata.normalize("NFKC", str(value or ""))
+        return " ".join(text.split()).casefold()
+
+    return normalize(values.get("japanese")), normalize(values.get("reading"))
 
 
 class Database:
@@ -331,11 +340,18 @@ class Database:
             tags.update(tag for tag in card["tags"].split() if tag)
         return sorted(tags, key=str.casefold)
 
-    def import_cards(self, rows: list[dict]) -> list[dict]:
+    def import_cards(self, rows: list[dict], skip_duplicates: bool = True) -> dict:
         created = []
+        skipped = []
+        known = {card_identity(card) for card in self.list_cards()}
         for row in rows:
+            identity = card_identity(row)
+            if skip_duplicates and identity in known:
+                skipped.append(row)
+                continue
             created.append(self.create_card(row))
-        return created
+            known.add(identity)
+        return {"cards": created, "skipped": skipped}
 
     def export_project(self) -> dict:
         deck = self.get_deck()
