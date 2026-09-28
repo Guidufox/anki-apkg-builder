@@ -15,7 +15,7 @@ python3 -m venv .venv
 mkdir -p data exports
 
 export PLAYWRIGHT_BROWSERS_PATH="$PROJECT_DIR/.playwright"
-if [[ "${SKIP_BROWSER_INSTALL:-0}" != "1" ]]; then
+if [[ "${SKIP_BROWSER_INSTALL:-0}" != "1" && ! -x .local-chromium/usr/lib/chromium/chromium ]]; then
   echo "Instalando Chromium local para el agente web..."
   if ! .venv/bin/python -m playwright install chromium; then
     echo "El CDN de Playwright no respondió; probando el paquete Debian sin instalarlo..." >&2
