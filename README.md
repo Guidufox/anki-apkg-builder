@@ -1,144 +1,255 @@
 # Immersion Deck Builder
 
-Aplicación local para Debian que crea tarjetas de japonés, las guarda en SQLite y exporta un paquete `.apkg` importable directamente en Anki. Cada entrada genera dos tarjetas: **Recognition** y **Recall**. No usa OpenAI, Codex, ChatGPT ni ninguna API cloud.
+Aplicación local —servida en el navegador— para crear tarjetas de japonés y exportar mazos `.apkg` compatibles con Anki.
 
-La edición, importación, backups y exportación Anki funcionan totalmente offline. La investigación web es un subsistema opcional: un modelo Bonsai/Qwen local decide acciones de un navegador Playwright restringido.
+- Funciona en **Windows y Linux**.
+- Los datos permanecen en tu computadora.
+- No requiere cuentas, OpenAI, ChatGPT, Codex ni una API cloud.
+- La edición y exportación funcionan completamente offline.
+- Cada entrada genera automáticamente tarjetas **Recognition** y **Recall**.
 
-## Setup exacto en Debian
+## Funciones
 
-Requisitos del sistema: Python 3 con soporte para `venv` y una sesión gráfica si se desea usar el navegador visible. Desde este directorio:
+- Editor rápido con lista, formulario y preview Anki.
+- Texto japonés Unicode y fuentes con fallback japonés.
+- Crear, editar, borrar, duplicar y reordenar entradas.
+- Búsqueda y filtro por tags.
+- Importación TSV/CSV con preview.
+- Detección de duplicados por `Japanese + Reading`; se omiten por defecto.
+- Exportación `.apkg` real mediante `genanki`.
+- IDs estables para reducir duplicaciones al regenerar un mazo.
+- Persistencia automática en SQLite.
+- Backup y restore mediante JSON.
+- Escape de HTML/JavaScript introducido en los campos.
+- Mazo demo incluido la primera vez.
+- Integración opcional con un modelo local y browser agent; no es necesaria para usar el programa.
+
+## Descargar
+
+### Opción A: ZIP
+
+En GitHub pulsa **Code → Download ZIP**, extrae el archivo y abre una terminal dentro de la carpeta extraída.
+
+### Opción B: Git
 
 ```bash
-chmod +x setup.sh run.sh
+git clone URL-DE-TU-REPOSITORIO.git
+cd anki-apkg-builder
+```
+
+Sustituye `URL-DE-TU-REPOSITORIO.git` por la dirección que GitHub muestre en el botón **Code**.
+
+## Requisitos
+
+- Python 3.10 o superior.
+- Un navegador moderno.
+- Anki únicamente para importar y estudiar el `.apkg`; no tiene que estar abierto mientras creas el mazo.
+
+Todo lo demás se instala dentro de `.venv/` en la propia carpeta del proyecto.
+
+## Inicio rápido en Windows
+
+1. Instala Python desde <https://www.python.org/downloads/windows/>.
+2. Durante la instalación activa **Add Python to PATH**.
+3. Descarga y extrae este repositorio.
+4. Haz doble clic en `setup.bat`.
+5. Cuando termine, haz doble clic en `run.bat`.
+6. Deja abierta la terminal y visita <http://127.0.0.1:5000>.
+
+También puedes usar PowerShell:
+
+```powershell
+.\setup.ps1
+.\run.ps1
+```
+
+Si PowerShell bloquea scripts, usa los archivos `.bat`; aplican una excepción limitada a esa ejecución.
+
+## Inicio rápido en Linux
+
+En Debian, Ubuntu y distribuciones similares necesitas Python 3 con soporte para entornos virtuales. Desde el proyecto:
+
+```bash
+chmod +x setup.sh run.sh setup-browser.sh
 ./setup.sh
-```
-
-El script crea `.venv/`, instala allí Flask, genanki, pytest y Playwright, y descarga Chromium dentro de `.playwright/`. Si ese CDN no responde, descarga los paquetes de Debian sin instalarlos y los extrae en `.local-chromium/`. No usa `sudo` ni modifica Python global. Para instalar la aplicación sin Chromium:
-
-```bash
-SKIP_BROWSER_INSTALL=1 ./setup.sh
-```
-
-La parte Anki funciona aunque Playwright o Chromium no estén disponibles.
-
-## Ejecutar y detener
-
-```bash
 ./run.sh
 ```
 
-Abrir <http://127.0.0.1:5000>. El servidor escucha exclusivamente en `127.0.0.1`. Para detenerlo, volver a la terminal y pulsar `Ctrl+C`.
+Abre <http://127.0.0.1:5000>.
 
-## Uso básico
+No se usa `sudo`, no se modifica Python global y el servidor escucha solamente en `127.0.0.1`.
 
-- El nombre del mazo y todos los campos se guardan automáticamente.
-- Cada entrada produce dos tarjetas Anki. La oración cloze y su respuesta son manuales: no se infieren conjugaciones.
-- La lista permite buscar, filtrar por tags, duplicar, borrar, arrastrar y reordenar.
-- **Import** acepta TSV o CSV de siete columnas: `Japanese, Reading, Meaning, Example, Translation, Context, Tags`. Siempre muestra preview antes de importar.
-- **Export .apkg** descarga el archivo y también lo deja en `exports/`.
-- El texto del usuario se escapa antes de entrar en Anki y se representa con `textContent` en la web; no se ejecuta HTML o JavaScript de las tarjetas.
+## Detener la aplicación
 
-Los IDs del modelo y del deck son deterministas. Los GUID de las notas se mantienen al editar o restaurar el proyecto, reduciendo duplicados al regenerar el mazo.
+Pulsa `Ctrl+C` en la terminal donde se ejecuta. Los cambios se guardan automáticamente.
 
-## Backup y restore
+## Crear tarjetas
 
-**Backup JSON** descarga el proyecto completo. **Restore JSON** reemplaza el proyecto actual por el backup después de pedir confirmación. Estos backups no dependen de Anki.
+1. Cambia el nombre del mazo en la barra superior.
+2. Pulsa `+` para añadir una entrada.
+3. Completa expresión, lectura, significado, ejemplo, traducción, contexto y tags.
+4. Escribe manualmente la oración incompleta y la respuesta de Recall.
+5. Revisa Recognition y Recall en el panel derecho.
 
-Los datos activos están en:
-
-- `data/anki_builder.sqlite3`: mazo, tarjetas, settings, propuestas, fuentes y logs.
-- `exports/`: paquetes `.apkg` generados.
-- `data/browser-profile/`: perfil separado del navegador agente.
-- `data/screenshots/`: capturas solicitadas por el agente.
-
-Conviene guardar copias del JSON fuera del proyecto antes de una actualización importante.
-
-## Conectar Bonsai/Qwen local
-
-Abrir **Settings → Local AI & Privacy** y configurar:
-
-1. **API format: OpenAI-compatible** para llama.cpp, vLLM, LM Studio u otro servidor compatible.
-2. **Base URL**, por ejemplo `http://127.0.0.1:8080/v1`.
-3. **Model name**, por ejemplo `bonsai` o el identificador expuesto por el servidor.
-4. **Context length** y **Timeout**.
-5. Activar Local AI, Network, Web y Browser, guardar y usar **Test Local AI**.
-
-Para el formato OpenAI-compatible se espera:
+Ejemplo:
 
 ```text
-POST {base_url}/chat/completions
-GET  {base_url}/models
+Japanese: 覆う
+Reading: おおう
+Meaning: cubrir
+Example: 霧が町を覆っている。
+Translation: La niebla cubre el pueblo.
+Context: Silent Hill f
+Tags: silent-hill-f verb vocabulary
+Cloze sentence: 霧が町を＿＿＿＿いる。
+Cloze / answer: 覆って
 ```
 
-Para Ollama, seleccionar **Ollama** y usar normalmente `http://127.0.0.1:11434`:
+No se infieren conjugaciones japonesas automáticamente.
+
+## Importación masiva
+
+Pulsa **Import** y pega TSV o CSV con estas siete columnas:
 
 ```text
-POST {base_url}/api/chat
-GET  {base_url}/api/tags
+Japanese  Reading  Meaning  Example  Translation  Context  Tags
 ```
 
-La aplicación rechaza cualquier endpoint de IA que no sea `localhost`, `127.0.0.1` o una dirección IP loopback. No existe fallback cloud, clave API ni integración OpenAI alojada. Para comprobar que la inferencia es local, apaga Internet, ejecuta el endpoint Bonsai/Qwen en loopback y pulsa **Test Local AI**; el editor y el exportador siguen funcionando aunque la prueba falle.
+Ejemplo TSV:
 
-## Browser agent y privacidad
+```text
+覆う	おおう	cubrir	霧が町を覆っている。	La niebla cubre el pueblo.	Silent Hill f	silent-hill-f verb
+```
 
-El flujo es: **Bonsai/Qwen local → controlador local → herramientas permitidas → Chromium local → web**. En una tarjeta, pulsar **Research with Local AI**. El agente muestra URL, tarea, última acción, próxima acción y estado. Puede pausarse, continuarse o detenerse.
+Pulsa **Preview** antes de importar. Las filas que repitan `Japanese + Reading`, dentro del archivo o contra el mazo actual, aparecen marcadas y se omiten por defecto. Activa **Allow duplicate Japanese + Reading entries** solo cuando quieras otra entrada independiente de la misma expresión.
 
-El navegador es visible por defecto. Headless solo se activa explícitamente en Settings. Sus únicas acciones son navegar, buscar, hacer clic, escribir, desplazar, leer DOM visible/enlaces, tomar capturas, volver, abrir/cerrar pestañas y esperar. No recibe shell, filesystem general, sudo, SSH ni ejecución arbitraria.
+Los campos Recall importados quedan vacíos para completarlos manualmente.
 
-Antes de login, envío/publicación, compra/pago, subida, borrado, cambios de cuenta, aceptación de términos, credenciales o datos personales, el controlador presenta una confirmación. El contenido escrito con la acción `type` no se guarda en logs.
+## Exportar a Anki
 
-La investigación crea una propuesta editable con resumen, significado, ejemplo, notas y fuentes (título, URL, fecha y fragmento). **Nunca modifica la tarjeta automáticamente**. `Accept` copia la propuesta visible al editor; `Reject` la descarta.
+Pulsa **Export .apkg**. El archivo se descarga y también queda en:
 
-### Red y modo completamente offline
+```text
+exports/
+```
 
-- Los tres indicadores de Privacy muestran Web, Browser y Network como ON/OFF.
-- **DISABLE ALL NETWORK ACCESS** detiene el agente y apaga acceso web y automatización.
-- Para modo completamente offline, deje Network, Web y Browser en OFF. Local AI puede permanecer configurada pero ninguna investigación se iniciará. La creación, edición, importación, backup y exportación `.apkg` siguen disponibles.
+En Anki abre **Archivo → Importar**, selecciona el `.apkg` y confirma.
 
-### Perfil del navegador
+Cada entrada genera dos tarjetas:
 
-El perfil predeterminado es `data/browser-profile/`, aislado del navegador personal. No se copian cookies o sesiones. Settings permite escribir otro perfil de forma explícita y muestra una advertencia; hacerlo puede exponer sus sesiones al agente.
+- **Recognition:** ejemplo y expresión → significado, lectura y traducción.
+- **Recall:** significado y oración incompleta → respuesta y oración completa.
 
-Para borrar completamente el perfil predeterminado, cierre la aplicación y ejecute desde este directorio:
+## Datos y backups
+
+Los datos se guardan automáticamente en:
+
+```text
+data/anki_builder.sqlite3
+```
+
+Usa **Backup JSON** para una copia transportable y **Restore JSON** para recuperarla. Restore reemplaza el proyecto actual después de pedir confirmación.
+
+Directorios generados localmente:
+
+```text
+data/                    Base, logs y perfil opcional
+exports/                 Mazos APKG
+.venv/                   Entorno Python local
+.playwright/             Chromium opcional
+```
+
+Están ignorados por Git cuando contienen datos personales o archivos generados.
+
+## Uso completamente offline
+
+El editor, SQLite, TSV/CSV, JSON y APKG funcionan offline. En **Settings** deja apagados Network, Web y Browser. **DISABLE ALL NETWORK ACCESS** los apaga inmediatamente. No existe fallback hacia una IA cloud.
+
+## Local AI y navegador — opcionales
+
+No necesitas esta sección para crear mazos.
+
+El proveedor opcional acepta endpoints loopback OpenAI-compatible u Ollama y rechaza URLs de IA externas.
+
+Linux:
 
 ```bash
-rm -rf -- data/browser-profile
+./setup-browser.sh
 ```
 
-Esta operación elimina de forma irreversible cookies, caché e historial del perfil del agente. No afecta Firefox/Chrome personal.
+Windows:
 
-Los logs se consultan en **Settings → Recent agent logs** y se guardan en SQLite. Incluyen timestamp, tarea, URL, acción y resultado, pero omiten el texto introducido en campos.
+```powershell
+.\setup-browser.ps1
+```
+
+Después configura Base URL, Model name, API format, Context length y Timeout en **Settings**.
+
+El navegador visible es el modo predeterminado. Usa un perfil separado en `data/browser-profile/`, una lista cerrada de acciones y confirmación humana para login, formularios, mensajes, compras, pagos, subidas, ejecutables, borrados, cuentas, credenciales o datos personales.
+
+Las investigaciones crean propuestas editables con fuentes y nunca sobrescriben una tarjeta automáticamente.
 
 ## Tests
 
+Linux:
+
 ```bash
 .venv/bin/python -m pytest
 ```
 
-Las pruebas cubren deck y CRUD, orden, TSV/CSV, backup/restore, paquete APKG real (SQLite interno y notas esperadas), escape HTML, proveedor local, fallo de IA, modos browser/red desactivados, allowlist, confirmación sensible y propuestas de investigación.
+Windows:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+Las pruebas cubren CRUD, TSV/CSV, duplicados, backups, APKG real, Unicode, escape HTML, proveedor local, seguridad del navegador y propuestas.
 
 ## Actualizar
 
-Después de copiar o traer una versión nueva del proyecto:
+Con Git:
 
 ```bash
+git pull
 ./setup.sh
-.venv/bin/python -m pytest
 ```
 
-`setup.sh` reutiliza el entorno local y actualiza dependencias según los archivos del proyecto. Haga antes un **Backup JSON**. No borre `data/` si quiere conservar el mazo.
+En Windows, después de actualizar, ejecuta nuevamente `setup.bat`. Haz antes un Backup JSON y no borres `data/`.
 
 ## Desinstalar
 
-1. Detener con `Ctrl+C`.
-2. Guardar un Backup JSON y los `.apkg` deseados.
-3. Eliminar este directorio del proyecto completo desde su carpeta padre.
+1. Crea un Backup JSON y conserva los `.apkg` deseados.
+2. Detén la aplicación.
+3. Borra la carpeta del proyecto.
 
-No hay servicio, usuario, paquete Python global ni configuración global que desinstalar.
+No instala servicios, cuentas, paquetes Python globales ni configuraciones globales.
+
+## Publicar tu copia en GitHub
+
+El repositorio ya está inicializado y tiene commits. Crea en GitHub un repositorio vacío, sin README ni `.gitignore`, y copia su URL.
+
+Desde esta carpeta:
+
+```bash
+git remote add origin https://github.com/TU-USUARIO/anki-apkg-builder.git
+git branch -M main
+git push -u origin main
+```
+
+Si `origin` ya existe:
+
+```bash
+git remote set-url origin https://github.com/TU-USUARIO/anki-apkg-builder.git
+git push -u origin main
+```
+
+GitHub puede pedir autenticación por navegador, token personal o SSH. Nunca subas `.venv/`, `data/`, `.playwright/`, `.local-chromium/` ni tus `.apkg`; `.gitignore` ya los excluye.
+
+Después del push, cualquiera podrá usar **Code → Download ZIP** o `git clone` y seguir la sección de Windows/Linux sin instalar Bonsai.
 
 ## Limitaciones conocidas
 
-- La calidad de investigación depende de que el modelo local siga el protocolo JSON y del contenido accesible de cada web.
-- CAPTCHAs, paywalls y páginas muy dinámicas pueden requerir control humano.
-- La detección de acciones sensibles combina las declaraciones del modelo con reglas conservadoras; revise siempre la ventana visible y use Pause/Stop si algo no coincide con la tarea.
-- No se infieren conjugaciones ni clozes japoneses automáticamente.
+- Es una aplicación local para una persona, sin autenticación multiusuario.
+- El servidor incluido es apropiado para localhost, no para exponerlo directamente a Internet.
+- Los clozes japoneses se completan manualmente.
+- La investigación opcional depende del protocolo JSON del modelo y de los sitios consultados.

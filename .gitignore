@@ -5,11 +5,9 @@ dist/
 *.apkg
 .pytest_cache/
 *.py[cod]
-data/*.sqlite3*
+data/
 exports/*
 !exports/.gitkeep
 .playwright/
 .local-chromium/
 downloads/
-data/browser-profile/
-data/screenshots/
